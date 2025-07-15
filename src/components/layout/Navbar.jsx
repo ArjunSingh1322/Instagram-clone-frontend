@@ -7,6 +7,7 @@ function Navbar() {
 
   function handle() {
     localStorage.removeItem("userToken")
+    localStorage.removeItem("username")
     navigate("/login")
   }
 

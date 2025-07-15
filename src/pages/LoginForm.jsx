@@ -36,6 +36,7 @@ const LoginForm = () => {
       if (response.ok) {
         // Save token or user info to localStorage if needed
         localStorage.setItem("userToken", data.data.token);
+        localStorage.setItem("username",data.data.name)
         navigate("/");
       } else {
         setError(data.message || "Invalid email or password.");

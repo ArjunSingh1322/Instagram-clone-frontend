@@ -1,22 +1,35 @@
 
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useContext } from "react";
 import api from "../../services/Api";
 import Navbar from "./Navbar";
-
+import { usercontext } from "./Context";
+import { Heart, MessageCircle, Send, Bookmark } from 'lucide-react';
 
 const Profile = () => {
   const [data, setdata] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [activePost, setActivePost] = useState(null);
-  const [loading, setLoading] = useState(false); 
-  const[profile,setprofile] = useState("")
+  const [loading, setLoading] = useState(false);
+  const [profile, setprofile] = useState("");
+  const [caption, setCaption] = useState("");
+  const [bio, setbio] = useState("");
+  const [bioflag, setbioflag] = useState(false);
+  const [usernameFlag, setUsernameFlag] = useState(false);
+
+  const { username, setUsername } = useContext(usercontext);
+  const [updatedName, setUpdatedName] = useState("");
+  const [flag, setFlag] = useState(true)
+  console.log("hello", username)
 
   useEffect(() => {
-    api.get("/post/my-posts")
-      .then(res => {
+    api
+      .get("/post/my-posts")
+      .then((res) => {
         setdata(res.data.data.reverse());
+        setCaption(res.data.data.text);
       })
-      .catch(err => console.log(err));
+      .catch((err) => console.log(err));
   }, []);
 
   function postmodal(post) {
@@ -31,37 +44,55 @@ const Profile = () => {
 
   function handleEdit() {
     console.log("Edit post:", activePost);
-    // navigate or open a form
   }
 
   function handleDelete(id) {
     setLoading(true);
-    api.delete(`/post/delete/${id}`)
+    api
+      .delete(`/post/delete/${id}`)
       .then(() => {
-        setdata(prevData => prevData.filter(post => post._id !== id));
+        setdata((prevData) => prevData.filter((post) => post._id !== id));
         closeModal();
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Delete failed:", err);
       })
       .finally(() => {
         setLoading(false);
       });
   }
-function changeprofilephoto(e) {
-  const file = e.target.files[0];
-  if (file) {
-    const url = URL.createObjectURL(file); 
-    setprofile(url); 
+
+  function editprofile() {
+    setUsernameFlag(true);
   }
-}
-  
+
+  function handleLikeClick(id) {
+    api.post(`/post/like/${id}`)
+      .then(() => {
+        api.get("/post/my-posts")
+          .then(res => setdata(res.data.data))
+          .catch(err => console.error("Error refreshing feed:", err));
+
+      })
+      .catch(err => {
+        api.post(`/post/unlike/${id}`)
+          .then(() => {
+            api.get("/post/my-posts")
+              .then(res => setdata(res.data.data))
+              .catch(err => console.error("Error refreshing feed after unlike:", err));
+          })
+          .catch(err => console.error("Unlike failed:", err));
+      });
+    if (flag) setFlag(false)
+    else setFlag(true)
+  }
+
 
   return (
- 
     <div className="max-w-5xl mx-auto px-4 py-8 relative">
-         <Navbar />
-      {/* Profile Header */}
+      <Navbar />
+
+
       <div className="flex flex-col md:flex-row items-center md:items-start md:gap-16 mb-10">
         <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden">
           <img
@@ -73,38 +104,90 @@ function changeprofilephoto(e) {
 
         <div className="mt-6 md:mt-0 flex-1">
           <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
-            <h2 className="text-2xl font-light">your_username</h2>
-            <button className="border px-4 py-1 rounded text-sm font-medium hover:bg-gray-100">   
-                Edit profile
-           </button>
-             
-    
+
+
+            {usernameFlag ? (
+              <div className="flex gap-3 items-center">
+                <input
+                  type="text"
+                  // value={username}
+                  onChange={(e) => setUpdatedName(e.target.value)}
+                  className="border px-2 py-1 rounded text-sm"
+                />
+                <button
+                  className="bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition"
+                  onClick={() => {
+                    api
+                      .put("/user/profile", {
+                        name: updatedName,
+                      })
+                      .then((res) => {
+
+                        console.log('newname', res.data.data.name)
+                        setUsernameFlag(false);
+                        setUsername(res.data.data.name)
+                        localStorage.setItem("username", res.data.data.name)
+
+                      })
+                      .catch((err) => {
+                        console.error("Error updating username:", err);
+                      });
+                  }}
+                >
+                  Save Username
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-4 items-center">
+                <h2 className="text-2xl font-light">{username}</h2>
+                <button
+                  className="border px-4 py-1 rounded text-sm font-medium hover:bg-gray-100"
+                  onClick={editprofile}
+                >
+                  Edit Profile
+                </button>
+              </div>
+            )}
+
           </div>
 
           <div className="flex gap-6 text-sm md:text-base mb-4">
-            <div><span className="font-semibold">{data.length}</span> posts</div>
-            <div><span className="font-semibold">120</span> followers</div>
-            <div><span className="font-semibold">180</span> following</div>
+            <div>
+              <span className="font-semibold">{data.length}</span> posts
+            </div>
           </div>
 
           <div>
-            <p className="font-semibold">Your Name</p>
-            <p className="text-sm text-gray-700">Just a short bio. 👋</p>
-            <a href="https://example.com" className="text-sm text-blue-500">example.com</a>
+            <p className="font-semibold">{username}</p>
+
           </div>
         </div>
       </div>
 
       {/* Post Grid */}
-      <div className="grid grid-cols-3 gap-1 border-t pt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 border-t pt-6">
         {data.map((post, index) => (
-          <div key={index} className="aspect-square overflow-hidden cursor-pointer">
-            <img
-              src={post.image}
-              alt={`Post ${index + 1}`}
-              onClick={() => postmodal(post)}
-              className="w-full h-full object-cover hover:opacity-80 transition"
-            />
+          <div key={index} className="">
+            <div className="aspect-square overflow-hidden">
+              <img
+                src={post.image}
+                alt={`Post ${index + 1}`}
+                onClick={() => postmodal(post)}
+                className="w-full h-full object-cover hover:opacity-50 transition"
+              />
+            </div>
+
+            {/* Buttons below post */}
+            <div className="flex items-center justify-between px-1 py-2">
+              <div className="flex items-center gap-3">
+                <button onClick={() => handleLikeClick(post._id)} className="text-sm">
+                  {flag ?"❤️":"🤍"} {post.likesCount}
+                </button>
+                <MessageCircle className="text-gray-800" size={20} />
+                <Send className="text-gray-800" size={20} />
+              </div>
+              <Bookmark className="text-gray-800" size={20} />
+            </div>
           </div>
         ))}
       </div>
@@ -142,9 +225,10 @@ function changeprofilephoto(e) {
                 </button>
                 <button
                   onClick={() => handleDelete(activePost._id)}
-                  className={`transition ${
-                    loading ? "text-gray-400 cursor-not-allowed" : "hover:text-red-600"
-                  }`}
+                  className={`transition ${loading
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "hover:text-red-600"
+                    }`}
                   disabled={loading}
                 >
                   {loading ? "Deleting..." : "Delete"}

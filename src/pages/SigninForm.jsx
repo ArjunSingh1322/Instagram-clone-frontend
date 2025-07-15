@@ -87,6 +87,7 @@ const SignInForm = () => {
           const data = await response.json();
           settoken(data.data.token)
           localStorage.setItem("userToken",data.data.token)
+          localStorage.setItem("username",data.data.name)
           console.log("Signup successful:", data);
 
           // Optionally show a success message
