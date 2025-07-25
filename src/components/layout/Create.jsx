@@ -196,6 +196,7 @@ const Create = () => {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col">
+      
       {/* Navbar */}
       <div className="sticky top-0 z-50 bg-white shadow-sm">
         <Navbar />
