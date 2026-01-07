@@ -22,15 +22,18 @@ const Profile = () => {
   const [flag, setFlag] = useState(true)
   console.log("hello", username)
 
-  useEffect(() => {
-    api
-      .get("/post/my-posts")
-      .then((res) => {
-        setdata(res.data.data.reverse());
-        setCaption(res.data.data.text);
-      })
-      .catch((err) => console.log(err));
-  }, []);
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  api
+    .get("/post/my-posts", { headers: { Authorization: `Bearer ${token}` } })
+    .then((res) => {
+      setdata(res.data.data.reverse());
+    })
+    .catch((err) => console.log(err));
+}, []);
+
 
   function postmodal(post) {
     setActivePost(post);
